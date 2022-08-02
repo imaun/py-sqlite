@@ -25,14 +25,16 @@ class SQLiteman:
 
 class SQLiteTable:
 
-    def __init__(self, tableName=None):
+    def __init__(self, connection, tableName=None):
+        self._connection = connection
+        self._cursor = connection.cursor()
         self.tableName = tableName
 
-    def setConnection(self, conn):
-        self.connection = conn
+    def setConnection(self, connection):
+        self._connection = connection
 
     def withColumns(self, *columns):
-        self.columns = columns
+        self._columns = columns
 
     def createTable(self, tableName=None):
         tbl = tableName
@@ -40,12 +42,12 @@ class SQLiteTable:
             tbl = self.tableName
 
         script = f'CREATE TABLE {tbl} ('
-        for i in range(len(self.columns)):
-            script += self.columns[i]
-            if i != len(self.columns) - 1:
+        for i in range(len(self._columns)):
+            script += self._columns[i]
+            if i != len(self._columns) - 1:
                 script += ', '
         script += ' );'
-        self.connection.execute(script)
+        self._connection.execute(script)
 
     def select(self, table, columns, limit=None):
         if table is None:
@@ -70,3 +72,24 @@ class SQLiteTable:
         self._cursor.execute(query)
         result = self._cursor.fetchall()
         return result
+
+    def insert(self, *data):
+        self.insert_data = data
+
+    def into(self, *columns, tableName=None):
+        if tableName is None:
+            tableName = self.tableName
+
+        script = f'INSERT INTO {tableName} ('
+        for i in range(len(columns)):
+            script += columns[i]
+            if i != len(columns)-1:
+                script += ', '
+        script += ') '
+        for data in range(len(self.insert_data)):
+            script += self.insert_data[data]
+            if data != len(columns)-1:
+                script += ', '
+        script += ')'
+
+        self._connection.execute(script)
